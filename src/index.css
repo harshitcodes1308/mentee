@@ -1,0 +1,334 @@
+@import "tailwindcss";
+
+/* ─── HackShastra Design Tokens ─────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-base:     #0D0D0D;
+  --bg-card:     #161616;
+  --bg-elevated: #1F1F1F;
+  --bg-hover:    #242424;
+
+  /* Borders */
+  --border:        rgba(255, 255, 255, 0.07);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-accent: rgba(180, 12, 12, 0.3);
+
+  /* Brand — Crimson */
+  --crimson:       #C41111;
+  --crimson-light: #E01515;
+  --crimson-dark:  #8B0000;
+  --crimson-muted: rgba(196, 17, 17, 0.1);
+  --crimson-glow:  rgba(196, 17, 17, 0.2);
+
+  /* Text */
+  --text-primary:   #F0F0F0;
+  --text-secondary: #666666;
+  --text-muted:     #333333;
+  --text-accent:    #C41111;
+
+  /* Status */
+  --correct: #22C55E;
+  --wrong:   #EF4444;
+  --correct-muted: rgba(34, 197, 94, 0.1);
+  --wrong-muted:   rgba(239, 68, 68, 0.1);
+
+  /* Fonts */
+  --font-display: 'League Spartan', sans-serif;
+  --font-body:    'Inter', sans-serif;
+
+  /* Radii */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+
+  /* Transitions */
+  --transition: 180ms ease;
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  width: 100%; height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Typography ─────────────────────────────────────────────────────────────── */
+.font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+h1, h2, h3, .heading {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* ─── Card ───────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.card-elevated {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+/* ─── Crimson Accent Card ────────────────────────────────────────────────────── */
+.card-accent {
+  background: var(--bg-card);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-lg);
+}
+
+/* ─── Divider ────────────────────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  width: 100%;
+}
+
+/* ─── Button — Primary ───────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  border-radius: var(--radius-md);
+  background: var(--crimson);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: none;
+  transition: background var(--transition), transform var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.btn-primary:hover  { background: var(--crimson-light); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* ─── Button — Ghost ─────────────────────────────────────────────────────────── */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all var(--transition);
+}
+.btn-ghost:hover {
+  border-color: var(--border-accent);
+  color: var(--text-primary);
+}
+
+/* ─── Input ──────────────────────────────────────────────────────────────────── */
+.input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.input:focus   { border-color: var(--border-accent); }
+.input::placeholder { color: var(--text-muted); }
+
+/* ─── Answer Option Buttons ──────────────────────────────────────────────────── */
+.option-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+.option-btn:hover:not(:disabled) {
+  border-color: var(--border-accent);
+  background: var(--bg-elevated);
+}
+.option-btn:active:not(:disabled) { transform: scale(0.99); }
+
+/* Letter badge */
+.option-letter {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.option-btn:hover:not(:disabled) .option-letter {
+  background: var(--crimson-muted);
+  color: var(--crimson);
+}
+
+/* States */
+.option-correct {
+  border-color: var(--correct) !important;
+  background: var(--correct-muted) !important;
+}
+.option-correct .option-letter {
+  background: rgba(34, 197, 94, 0.15) !important;
+  color: var(--correct) !important;
+}
+
+.option-wrong {
+  border-color: var(--wrong) !important;
+  background: var(--wrong-muted) !important;
+}
+.option-wrong .option-letter {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: var(--wrong) !important;
+}
+
+.option-dimmed {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ─── Countdown Ring ─────────────────────────────────────────────────────────── */
+.countdown-svg { transform: rotate(-90deg); display: block; }
+
+/* ─── Leaderboard Row ────────────────────────────────────────────────────────── */
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color var(--transition);
+}
+.lb-row-me {
+  border-color: var(--border-accent) !important;
+  background: rgba(196,17,17,0.04) !important;
+}
+
+/* ─── Badge ──────────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 100px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+.badge-crimson {
+  background: var(--crimson-muted);
+  color: var(--crimson-light);
+  border: 1px solid var(--border-accent);
+}
+.badge-neutral {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+/* ─── Dot loader ─────────────────────────────────────────────────────────────── */
+@keyframes dot-pulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40%           { opacity: 1;   transform: scale(1); }
+}
+.dot { display: inline-block; border-radius: 50%; animation: dot-pulse 1.2s ease-in-out infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ─── Shake ──────────────────────────────────────────────────────────────────── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(3px); }
+}
+.shake { animation: shake 0.35s ease; }
+
+/* ─── Avatar bob ─────────────────────────────────────────────────────────────── */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+
+/* ─── Fade in ────────────────────────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up 0.4s ease forwards; }
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar          { width: 4px; }
+::-webkit-scrollbar-track    { background: var(--bg-base); }
+::-webkit-scrollbar-thumb    { background: var(--bg-elevated); border-radius: 2px; }
+
+/* ─── Selection ──────────────────────────────────────────────────────────────── */
+::selection { background: rgba(196, 17, 17, 0.25); }
+
+/* ─── Progress bar ───────────────────────────────────────────────────────────── */
+.progress-track {
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--crimson);
+  border-radius: 1px;
+  transition: width 0.3s ease;
+}
