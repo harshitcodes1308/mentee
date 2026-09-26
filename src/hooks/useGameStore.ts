@@ -216,7 +216,7 @@ function useDemoPlayerGame(roomCode: string, tempId: string) {
     const timeTakenMs = Date.now() - new Date(room.questionStartedAt).getTime();
     const question = QUESTIONS[room.currentQuestionIndex];
     const correct = selectedIndex === question.correctIndex;
-    const points = calculatePoints(correct, timeTakenMs, myPlayer.streak);
+    const points = calculatePoints(correct);
     setHasAnswered(true);
     setLastAnswer({ correct, points });
     broadcastDemoEvent({

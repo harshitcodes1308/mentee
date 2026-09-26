@@ -5,11 +5,8 @@ import { neon } from '@neondatabase/serverless';
 const QUESTIONS_CORRECT_IDX = [0,1,2,2,1,3,1,2,0,1,0,2,1,1,1,1,2,1,1,2];
 const QUESTION_TIME_SEC = 15;
 
-function calcPoints(correct: boolean, timeTakenMs: number, streak: number): number {
-  if (!correct) return 0;
-  const speedBonus = Math.round(500 * Math.max(0, 1 - timeTakenMs / (QUESTION_TIME_SEC * 1000)));
-  const streakBonus = streak >= 2 ? 100 * Math.min(streak - 1, 5) : 0;
-  return 1000 + speedBonus + streakBonus;
+function calcPoints(correct: boolean): number {
+  return correct ? 100 : -50;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -53,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const currentStreak = players[0].streak as number;
 
   const newStreak = correct ? currentStreak + 1 : 0;
-  const points = calcPoints(correct, timeTakenMs, newStreak);
+  const points = calcPoints(correct);
 
   // Record answer (ignore duplicate — idempotent)
   try {

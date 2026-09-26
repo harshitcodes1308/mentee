@@ -213,6 +213,26 @@ h1, h2, h3, .heading {
   color: var(--crimson);
 }
 
+.option-selected {
+  border-color: var(--crimson) !important;
+  background: rgba(196, 17, 17, 0.08) !important;
+  box-shadow: 0 0 0 1.5px var(--crimson), 0 0 16px rgba(196, 17, 17, 0.2);
+}
+.option-selected .option-letter {
+  background: var(--crimson) !important;
+  color: #FFFFFF !important;
+}
+
+.option-locked.option-selected {
+  border-color: #F0F0F0 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 1.5px #F0F0F0, 0 0 12px rgba(255, 255, 255, 0.15);
+}
+.option-locked.option-selected .option-letter {
+  background: #F0F0F0 !important;
+  color: #0D0D0D !important;
+}
+
 /* States */
 .option-correct {
   border-color: var(--correct) !important;

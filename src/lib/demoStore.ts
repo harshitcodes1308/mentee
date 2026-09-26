@@ -3,7 +3,7 @@
 // localStorage persists room/players/answers across tab refreshes.
 
 import type { Room, Player, Answer } from '../types';
-import { QUESTIONS, QUESTION_TIME_SEC } from '../data/questions';
+import { QUESTIONS } from '../data/questions';
 
 export interface GameState {
   room: Room | null;
@@ -60,12 +60,6 @@ export function clearGameState() {
 }
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
-export function calculatePoints(correct: boolean, timeTakenMs: number, streak: number): number {
-  if (!correct) return 0;
-  const BASE = 1000;
-  const SPEED_MAX = 500;
-  const STREAK_BONUS = 100;
-  const speedBonus = Math.round(SPEED_MAX * Math.max(0, 1 - timeTakenMs / (QUESTION_TIME_SEC * 1000)));
-  const streakBonus = streak >= 2 ? STREAK_BONUS * Math.min(streak - 1, 5) : 0;
-  return BASE + speedBonus + streakBonus;
+export function calculatePoints(correct: boolean): number {
+  return correct ? 100 : -50;
 }

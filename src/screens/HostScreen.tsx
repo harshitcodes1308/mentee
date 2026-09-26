@@ -98,63 +98,80 @@ export function HostScreen() {
               style={{
                 flex: 1,
                 display: 'grid',
-                gridTemplateColumns: 'auto 1fr',
-                gap: 0,
+                gridTemplateColumns: 'minmax(340px, 390px) 1fr',
+                gap: '2.5rem',
                 padding: '2.5rem',
-                maxWidth: 1280,
+                maxWidth: 1380,
                 width: '100%',
                 margin: '0 auto',
               }}
             >
               {/* Left: QR + code */}
-              <div style={{ width: 280, flexShrink: 0 }}>
+              <div style={{ width: '100%' }}>
                 <div
                   className="card"
-                  style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}
+                  style={{
+                    padding: '2rem 1.75rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '1.5rem',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                  }}
                 >
                   {/* QR */}
                   <div
                     style={{
-                      padding: '1rem',
-                      background: '#fff',
-                      borderRadius: 10,
+                      padding: '1.25rem',
+                      background: '#FFFFFF',
+                      borderRadius: 16,
                       lineHeight: 0,
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1)',
                     }}
                   >
                     <QRCodeSVG
                       value={joinUrl}
-                      size={188}
+                      size={260}
                       bgColor="#ffffff"
                       fgColor="#0D0D0D"
-                      level="M"
+                      level="Q"
                     />
                   </div>
 
                   {/* Room code */}
                   <div style={{ textAlign: 'center', width: '100%' }}>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 8 }}>
+                    <p
+                      style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.12em',
+                        color: 'var(--text-secondary)',
+                        textTransform: 'uppercase',
+                        marginBottom: 6,
+                      }}
+                    >
                       Room Code
                     </p>
                     <motion.div
-                      animate={{ opacity: [0.6, 1, 0.6] }}
-                      transition={{ duration: 2.5, repeat: Infinity }}
+                      animate={{ opacity: [0.75, 1, 0.75] }}
+                      transition={{ duration: 2.2, repeat: Infinity }}
                       style={{
                         fontFamily: "'League Spartan', sans-serif",
                         fontWeight: 900,
-                        fontSize: '2.25rem',
-                        letterSpacing: '0.2em',
+                        fontSize: '3.75rem',
+                        lineHeight: 1,
+                        letterSpacing: '0.16em',
                         color: 'var(--crimson)',
+                        textShadow: '0 0 24px rgba(196, 17, 17, 0.45)',
+                        margin: '0.25rem 0',
                       }}
                     >
                       {room.code}
                     </motion.div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                      Scan QR or enter code at <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{window.location.host}</span>
+                    </p>
                   </div>
-
-                  <div className="divider" />
-
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                    {window.location.host}
-                  </p>
                 </div>
 
                 {/* Player count */}

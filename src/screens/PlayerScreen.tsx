@@ -1,5 +1,5 @@
 // ─── Player Screen — HackShastra minimal ──────────────────────────────────────
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayerGame } from '../hooks/useGameStore';
 import { QUESTIONS } from '../data/questions';
@@ -34,10 +34,42 @@ export function PlayerScreen({ roomCode }: PlayerScreenProps) {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
 
-  const { room, players, timeLeft, hasAnswered, lastAnswer, submitAnswer, joinGame } = usePlayerGame(
+  // Question answer selection & locking
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [isLocked, setIsLocked] = useState(false);
+  const [baseScore, setBaseScore] = useState<number>(0);
+  const prevQIdxRef = useRef<number>(-1);
+
+  const { room, players, timeLeft, hasAnswered, submitAnswer, joinGame } = usePlayerGame(
     roomCode,
     myPlayer?.tempId || '',
   );
+
+  const currentQ = room?.status === 'playing' ? QUESTIONS[room.currentQuestionIndex] : null;
+  const isTimeUp = timeLeft <= 0;
+
+  // Compute rank for results
+  const myRankData = (() => {
+    if (!myPlayer) return null;
+    const sorted = [...players].sort((a, b) => b.score - a.score);
+    const rank = sorted.findIndex((p) => p.tempId === myPlayer.tempId) + 1;
+    const found = players.find((p) => p.tempId === myPlayer.tempId);
+    return { rank: rank || 1, player: found || myPlayer };
+  })();
+
+  const currentScore = myRankData?.player.score ?? myPlayer?.score ?? 0;
+
+  // Reset selection and lock on each new question; snapshot base score
+  useEffect(() => {
+    if (room && room.status === 'playing') {
+      if (prevQIdxRef.current !== room.currentQuestionIndex) {
+        prevQIdxRef.current = room.currentQuestionIndex;
+        setSelectedIdx(null);
+        setIsLocked(false);
+        setBaseScore(currentScore);
+      }
+    }
+  }, [room?.currentQuestionIndex, room?.status, currentScore]);
 
   // Phase transitions
   useEffect(() => {
@@ -47,12 +79,13 @@ export function PlayerScreen({ roomCode }: PlayerScreenProps) {
     if (room.status === 'finished') setPhase('results');
   }, [room?.status, phase, myPlayer]);
 
-  // Shake on wrong
+  // Auto-lock and submit if timer runs out with an option selected but not locked
   useEffect(() => {
-    if (lastAnswer && !lastAnswer.correct) {
-      setShakeIdx(null); // trigger re-render if same wrong
+    if (isTimeUp && selectedIdx !== null && !isLocked && !hasAnswered) {
+      setIsLocked(true);
+      submitAnswer(selectedIdx);
     }
-  }, [lastAnswer]);
+  }, [isTimeUp, selectedIdx, isLocked, hasAnswered, submitAnswer]);
 
   const handleJoin = useCallback(async () => {
     setIsJoining(true);
@@ -66,30 +99,31 @@ export function PlayerScreen({ roomCode }: PlayerScreenProps) {
     if (result.player) {
       saveMyPlayer(result.player);
       setMyPlayer(result.player);
+      setBaseScore(result.player.score);
       setPhase('waiting');
     }
   }, [joinGame, nickname]);
 
-  const handleAnswer = useCallback((idx: number) => {
-    if (hasAnswered) return;
-    submitAnswer(idx);
-    const q = room ? QUESTIONS[room.currentQuestionIndex] : null;
-    if (q && idx !== q.correctIndex) {
+  const handleSelectOption = useCallback((idx: number) => {
+    if (isLocked) {
       setShakeIdx(idx);
-      setTimeout(() => setShakeIdx(null), 400);
+      setTimeout(() => setShakeIdx(null), 350);
+      return;
     }
-  }, [hasAnswered, submitAnswer, room]);
+    if (isTimeUp) return;
+    setSelectedIdx(idx);
+  }, [isLocked, isTimeUp]);
 
-  const currentQ = room?.status === 'playing' ? QUESTIONS[room.currentQuestionIndex] : null;
+  const handleLockIn = useCallback(() => {
+    if (selectedIdx === null || isLocked || isTimeUp) return;
+    setIsLocked(true);
+    submitAnswer(selectedIdx);
+  }, [selectedIdx, isLocked, isTimeUp, submitAnswer]);
 
-  // Compute rank for results
-  const myRankData = (() => {
-    if (!myPlayer) return null;
-    const sorted = [...players].sort((a, b) => b.score - a.score);
-    const rank = sorted.findIndex((p) => p.tempId === myPlayer.tempId) + 1;
-    const found = players.find((p) => p.tempId === myPlayer.tempId);
-    return { rank: rank || 1, player: found || myPlayer };
-  })();
+  // Score shown on quiz: stays at baseScore while timer runs; reveals final score when time is up
+  const displayedScore = isTimeUp
+    ? currentScore
+    : baseScore;
 
   return (
     <div
@@ -209,25 +243,60 @@ export function PlayerScreen({ roomCode }: PlayerScreenProps) {
               {myPlayer.tempId}
             </span>
 
+            {/* Score & Room status cards */}
             <div
-              className="card"
-              style={{ padding: '1.25rem 2rem', marginBottom: '2.5rem' }}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '0.875rem',
+                width: '100%',
+                maxWidth: 340,
+                marginBottom: '2.5rem',
+              }}
             >
-              <motion.span
-                key={players.length}
-                initial={{ scale: 1.2, color: '#C41111' }}
-                animate={{ scale: 1, color: '#F0F0F0' }}
-                style={{
-                  fontFamily: "'League Spartan', sans-serif",
-                  fontWeight: 900,
-                  fontSize: '2.5rem',
-                  letterSpacing: '-0.04em',
-                  display: 'block',
-                }}
-              >
-                {players.length}
-              </motion.span>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>hackers in the room</span>
+              <div className="card" style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                  Current Score
+                </p>
+                <motion.span
+                  key={currentScore}
+                  initial={{ scale: 1.15 }}
+                  animate={{ scale: 1 }}
+                  style={{
+                    fontFamily: "'League Spartan', sans-serif",
+                    fontWeight: 900,
+                    fontSize: '2rem',
+                    letterSpacing: '-0.03em',
+                    color: 'var(--text-primary)',
+                    display: 'block',
+                  }}
+                >
+                  {currentScore.toLocaleString()}
+                </motion.span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>pts</span>
+              </div>
+
+              <div className="card" style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                  Hackers in Room
+                </p>
+                <motion.span
+                  key={players.length}
+                  initial={{ scale: 1.2, color: '#C41111' }}
+                  animate={{ scale: 1, color: '#F0F0F0' }}
+                  style={{
+                    fontFamily: "'League Spartan', sans-serif",
+                    fontWeight: 900,
+                    fontSize: '2rem',
+                    letterSpacing: '-0.03em',
+                    color: 'var(--crimson)',
+                    display: 'block',
+                  }}
+                >
+                  {players.length}
+                </motion.span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>connected</span>
+              </div>
             </div>
 
             {/* Waiting dots */}
@@ -311,9 +380,27 @@ export function PlayerScreen({ roomCode }: PlayerScreenProps) {
                     fontSize: '1.25rem',
                     letterSpacing: '-0.02em',
                     color: 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: 6,
                   }}
                 >
-                  {myPlayer.score.toLocaleString()}
+                  {displayedScore.toLocaleString()}
+                  {isTimeUp && selectedIdx !== null && (
+                    <motion.span
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      style={{
+                        fontFamily: "'League Spartan', sans-serif",
+                        fontWeight: 900,
+                        fontSize: '0.875rem',
+                        color: selectedIdx === currentQ.correctIndex ? 'var(--correct)' : 'var(--wrong)',
+                      }}
+                    >
+                      {selectedIdx === currentQ.correctIndex ? '+100' : '-50'}
+                    </motion.span>
+                  )}
                 </p>
               </div>
             </div>
@@ -368,93 +455,177 @@ export function PlayerScreen({ roomCode }: PlayerScreenProps) {
               </p>
             </motion.div>
 
-            {/* Feedback overlay */}
-            <AnimatePresence>
-              {lastAnswer && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  style={{
-                    position: 'fixed',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 50,
-                    background: 'var(--bg-card)',
-                    border: `1px solid ${lastAnswer.correct ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}`,
-                    borderRadius: 16,
-                    padding: '1.75rem 2.25rem',
-                    textAlign: 'center',
-                    backdropFilter: 'blur(20px)',
-                    minWidth: 200,
-                  }}
-                >
-                  <p style={{ fontSize: '2rem', marginBottom: 8 }}>
-                    {lastAnswer.correct ? '✓' : '✗'}
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "'League Spartan', sans-serif",
-                      fontWeight: 800,
-                      fontSize: '1.375rem',
-                      letterSpacing: '-0.02em',
-                      color: lastAnswer.correct ? 'var(--correct)' : 'var(--wrong)',
-                    }}
-                  >
-                    {lastAnswer.correct ? `+${lastAnswer.points}` : 'Wrong'}
-                  </p>
-                  {lastAnswer.correct && (
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: 4 }}>points</p>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* Options */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {currentQ.options.map((opt, idx) => {
                 let cls = 'option-btn';
-                if (hasAnswered) {
-                  if (idx === currentQ.correctIndex) cls += ' option-correct';
-                  else cls += ' option-dimmed';
+                const isSelected = selectedIdx === idx;
+
+                if (!isTimeUp) {
+                  if (isSelected) {
+                    cls += ' option-selected';
+                    if (isLocked) cls += ' option-locked';
+                  } else if (isLocked) {
+                    cls += ' option-dimmed';
+                  }
+                } else {
+                  if (idx === currentQ.correctIndex) {
+                    cls += ' option-correct';
+                  } else if (isSelected) {
+                    cls += ' option-wrong';
+                  } else {
+                    cls += ' option-dimmed';
+                  }
                 }
-                const isWrong = lastAnswer && !lastAnswer.correct &&
-                  idx !== currentQ.correctIndex &&
-                  hasAnswered;
 
                 return (
                   <motion.button
                     key={idx}
                     className={`${cls} ${shakeIdx === idx ? 'shake' : ''}`}
-                    onClick={() => handleAnswer(idx)}
-                    disabled={hasAnswered}
+                    onClick={() => handleSelectOption(idx)}
+                    disabled={isLocked || isTimeUp}
                     initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: hasAnswered && idx !== currentQ.correctIndex && !isWrong ? 0.35 : 1, x: 0 }}
-                    transition={{ delay: idx * 0.06 }}
-                    whileHover={!hasAnswered ? { x: 2 } : {}}
-                    whileTap={!hasAnswered ? { scale: 0.98 } : {}}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    whileHover={!isLocked && !isTimeUp ? { x: 2 } : {}}
+                    whileTap={!isLocked && !isTimeUp ? { scale: 0.98 } : {}}
                   >
                     <span
                       className="option-letter"
                       style={{
-                        color: LETTER_COLORS[idx],
-                        background: `${LETTER_COLORS[idx]}12`,
+                        color: isSelected ? '#FFFFFF' : LETTER_COLORS[idx],
+                        background: isSelected ? 'var(--crimson)' : `${LETTER_COLORS[idx]}12`,
                       }}
                     >
                       {LETTERS[idx]}
                     </span>
-                    <span style={{ flex: 1, textAlign: 'left' }}>{opt}</span>
+                    <span style={{ flex: 1, textAlign: 'left', fontWeight: isSelected ? 600 : 500 }}>
+                      {opt}
+                    </span>
+                    {isSelected && (
+                      <span style={{ fontSize: '0.875rem' }}>
+                        {isLocked ? '🔒' : '●'}
+                      </span>
+                    )}
                   </motion.button>
                 );
               })}
             </div>
 
-            {hasAnswered && !lastAnswer && (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '1rem' }}>
-                Locked in — waiting for next question
-              </p>
-            )}
+            {/* Lock-In Action & Time-Up Feedback Bar */}
+            <div style={{ marginTop: '1.25rem' }}>
+              {!isTimeUp && !isLocked && (
+                <div>
+                  {selectedIdx !== null ? (
+                    <motion.button
+                      onClick={handleLockIn}
+                      className="btn-primary"
+                      style={{
+                        width: '100%',
+                        padding: '0.875rem',
+                        fontSize: '1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                      }}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <span>Lock In Option {LETTERS[selectedIdx]}</span>
+                      <span>🔒</span>
+                    </motion.button>
+                  ) : (
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        padding: '0.875rem',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.875rem',
+                        border: '1px dashed var(--border)',
+                        borderRadius: 'var(--radius-md)',
+                      }}
+                    >
+                      Tap an option above to select your answer
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!isTimeUp && isLocked && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{
+                    padding: '0.875rem 1.25rem',
+                    background: 'var(--bg-card)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.625rem',
+                  }}
+                >
+                  <span style={{ fontSize: '1rem' }}>🔒</span>
+                  <span style={{ fontFamily: "'League Spartan', sans-serif", fontWeight: 700, fontSize: '0.9375rem', color: '#F0F0F0' }}>
+                    Option {selectedIdx !== null ? LETTERS[selectedIdx] : ''} Locked In
+                  </span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8125rem' }}>· Result reveals at timer end</span>
+                </motion.div>
+              )}
+
+              {isTimeUp && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{
+                    padding: '1rem 1.25rem',
+                    background: 'var(--bg-card)',
+                    border: `1px solid ${
+                      selectedIdx === currentQ.correctIndex
+                        ? 'rgba(34, 197, 94, 0.5)'
+                        : selectedIdx !== null
+                        ? 'rgba(239, 68, 68, 0.5)'
+                        : 'var(--border)'
+                    }`,
+                    borderRadius: 'var(--radius-md)',
+                    textAlign: 'center',
+                  }}
+                >
+                  {selectedIdx === currentQ.correctIndex ? (
+                    <div>
+                      <p style={{ fontFamily: "'League Spartan', sans-serif", fontWeight: 800, fontSize: '1.25rem', color: 'var(--correct)', marginBottom: 2 }}>
+                        ✓ Correct Answer! +100 pts
+                      </p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
+                        Option {LETTERS[currentQ.correctIndex]} is right
+                      </p>
+                    </div>
+                  ) : selectedIdx !== null ? (
+                    <div>
+                      <p style={{ fontFamily: "'League Spartan', sans-serif", fontWeight: 800, fontSize: '1.25rem', color: 'var(--wrong)', marginBottom: 2 }}>
+                        ✗ Wrong Answer! -50 pts
+                      </p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
+                        Correct was Option {LETTERS[currentQ.correctIndex]}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ fontFamily: "'League Spartan', sans-serif", fontWeight: 800, fontSize: '1.125rem', color: 'var(--text-muted)', marginBottom: 2 }}>
+                        ⏰ Time Expired — No Answer (0 pts)
+                      </p>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
+                        Correct was Option {LETTERS[currentQ.correctIndex]}
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </div>
           </motion.div>
         )}
 
